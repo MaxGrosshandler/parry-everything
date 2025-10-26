@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parry Everything - 2D Combat Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        #gameContainer {
+            position: relative;
+            background: #1a1a2e;
+            border: 3px solid #00d4ff;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+
+        canvas {
+            display: block;
+            background: linear-gradient(180deg, #87ceeb 0%, #e0f6ff 100%);
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 18px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            z-index: 100;
+        }
+
+        .ui-section {
+            margin-bottom: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            min-width: 200px;
+        }
+
+        .health-bar-container {
+            width: 200px;
+            height: 25px;
+            background: #333;
+            border: 2px solid #00d4ff;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .health-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00, #00aa00);
+            width: 100%;
+            transition: width 0.2s ease;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .controls p {
+            margin: 5px 0;
+        }
+
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 200;
+            color: white;
+            text-align: center;
+        }
+
+        #gameOverScreen h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
+        }
+
+        #gameOverScreen p {
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+
+        #gameOverScreen button {
+            font-size: 18px;
+            padding: 12px 30px;
+            background: #00d4ff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        #gameOverScreen button:hover {
+            background: #00a8cc;
+        }
+
+        .win {
+            color: #00ff00;
+        }
+
+        .loss {
+            color: #ff0000;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="1200" height="600"></canvas>
+
+        <div id="ui">
+            <div class="ui-section">
+                <div>HP: <span id="playerHp">100</span>/100</div>
+                <div class="health-bar-container">
+                    <div class="health-bar" id="healthBar"></div>
+                </div>
+            </div>
+            <div class="ui-section">
+                <div>Goal: Reach the castle on the right!</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <p><strong>Controls:</strong></p>
+            <p>A/D - Move Left/Right</p>
+            <p>Space - Jump</p>
+            <p>Left Click - Attack</p>
+            <p>Right Click - Parry</p>
+        </div>
+
+        <div id="gameOverScreen">
+            <h1 id="gameOverTitle"></h1>
+            <p id="gameOverMessage"></p>
+            <button onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
