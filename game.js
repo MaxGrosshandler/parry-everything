@@ -9,12 +9,55 @@ const GAME_STATE = {
     WIN: 'win'
 };
 
+// Game configuration constants
+const CONFIG = {
+    CANVAS_WIDTH: 1200,
+    CANVAS_HEIGHT: 600,
+    GRAVITY: 0.6,
+    FRICTION: 0.8,
+    PLAYER: {
+        START_X: 100,
+        START_Y: 400,
+        WIDTH: 30,
+        HEIGHT: 40,
+        SPEED: 250,
+        JUMP_POWER: 400,
+        MAX_HEALTH: 100,
+        ATTACK_COOLDOWN: 0.3,
+        ATTACK_DURATION: 0.15,
+        ATTACK_RANGE: 40,
+        PARRY_COOLDOWN: 0.4,
+        PARRY_RADIUS: 35
+    },
+    ENEMY: {
+        WIDTH: 28,
+        HEIGHT: 36,
+        SPEED: 100,
+        JUMP_POWER: 300,
+        MAX_HEALTH: 30,
+        ATTACK_DAMAGE: 10,
+        ATTACK_COOLDOWN: 0.8,
+        ATTACK_RANGE: 40,
+        ATTACK_DISTANCE: 60,
+        PATROL_RANGE: 300,
+        CHASE_DISTANCE: 400
+    },
+    DAMAGE: {
+        ENEMY_TO_PLAYER: 10,
+        PLAYER_TO_ENEMY: 15,
+        PARRIED_TO_ENEMY: 20
+    },
+    BOUNDARIES: {
+        DEATH_Y: 700
+    }
+};
+
 // Game class
 class Game {
     constructor() {
         this.state = GAME_STATE.PLAYING;
-        this.gravity = 0.6;
-        this.friction = 0.8;
+        this.gravity = CONFIG.GRAVITY;
+        this.friction = CONFIG.FRICTION;
 
         // Input handling
         this.keys = {};
@@ -22,7 +65,7 @@ class Game {
         this.setupInputHandlers();
 
         // Create player
-        this.player = new Player(100, 400, this);
+        this.player = new Player(CONFIG.PLAYER.START_X, CONFIG.PLAYER.START_Y, this);
 
         // Create level
         this.createLevel();
@@ -58,7 +101,7 @@ class Game {
     createLevel() {
         this.platforms = [
             // Ground
-            new Platform(0, 550, 1200, 50, '#8B4513'),
+            new Platform(0, 550, canvas.width, 50, '#8B4513'),
             // Starting area platforms
             new Platform(300, 450, 200, 20, '#654321'),
             new Platform(600, 400, 200, 20, '#654321'),
@@ -69,7 +112,7 @@ class Game {
             new Platform(850, 200, 150, 20, '#654321'),
             // Final section with goal
             new Platform(1100, 150, 200, 20, '#654321'),
-            new Platform(1100, 550, 100, 50, '#FFD700'), // Goal platform
+            new Platform(canvas.width - 100, 550, 100, 50, '#FFD700'), // Goal platform
         ];
 
         // Create enemies
@@ -114,7 +157,7 @@ class Game {
         if (this.player.isAttacking) {
             this.enemies.forEach(enemy => {
                 if (this.player.attackHitbox.intersects(enemy.hitbox)) {
-                    enemy.takeDamage(15);
+                    enemy.takeDamage(CONFIG.DAMAGE.PLAYER_TO_ENEMY);
                     this.player.isAttacking = false;
                 }
             });
@@ -126,10 +169,10 @@ class Game {
                 if (enemy.attackHitbox.intersects(this.player.hitbox)) {
                     // Check if player is parrying
                     if (this.player.isParrying) {
-                        enemy.takeDamage(30);
+                        enemy.takeDamage(CONFIG.DAMAGE.PARRIED_TO_ENEMY);
                         enemy.isAttacking = false;
                     } else {
-                        this.player.takeDamage(10);
+                        this.player.takeDamage(CONFIG.DAMAGE.ENEMY_TO_PLAYER);
                     }
                 }
             }
@@ -268,24 +311,26 @@ class Player {
         this.x = x;
         this.y = y;
         this.game = game;
-        this.width = 30;
-        this.height = 40;
+        this.width = CONFIG.PLAYER.WIDTH;
+        this.height = CONFIG.PLAYER.HEIGHT;
         this.hitbox = new Hitbox(x, y, this.width, this.height);
 
         // Physics
         this.velocityX = 0;
         this.velocityY = 0;
-        this.speed = 250; // pixels per second
-        this.jumpPower = 400;
+        this.speed = CONFIG.PLAYER.SPEED;
+        this.jumpPower = CONFIG.PLAYER.JUMP_POWER;
 
         // State
-        this.health = 100;
-        this.maxHealth = 100;
+        this.health = CONFIG.PLAYER.MAX_HEALTH;
+        this.maxHealth = CONFIG.PLAYER.MAX_HEALTH;
         this.isGrounded = false;
         this.isAttacking = false;
         this.isParrying = false;
         this.attackCooldown = 0;
         this.parryCooldown = 0;
+        this.attackDuration = 0;
+        this.damageFlashTimer = 0;
         this.direction = 1; // 1 for right, -1 for left
 
         // Attack and parry hitboxes
@@ -314,8 +359,9 @@ class Player {
         // Attack
         if (keys['attack'] && this.attackCooldown <= 0) {
             this.isAttacking = true;
-            this.attackCooldown = 0.3; // 300ms cooldown
-            const attackRange = 40;
+            this.attackDuration = CONFIG.PLAYER.ATTACK_DURATION;
+            this.attackCooldown = CONFIG.PLAYER.ATTACK_COOLDOWN;
+            const attackRange = CONFIG.PLAYER.ATTACK_RANGE;
             this.attackHitbox = new Hitbox(
                 this.x + (this.direction > 0 ? this.width : -attackRange),
                 this.y,
@@ -327,7 +373,7 @@ class Player {
         // Parry
         if (keys['parry'] && this.parryCooldown <= 0) {
             this.isParrying = true;
-            this.parryCooldown = 0.2;
+            this.parryCooldown = CONFIG.PLAYER.PARRY_COOLDOWN;
         } else if (!keys['parry']) {
             this.isParrying = false;
         }
@@ -345,10 +391,10 @@ class Player {
 
         // Boundary check
         if (this.x < 0) this.x = 0;
-        if (this.x + this.width > 1200) this.x = 1200 - this.width;
+        if (this.x + this.width > canvas.width) this.x = canvas.width - this.width;
 
         // Death boundary
-        if (this.y > 700) {
+        if (this.y > CONFIG.BOUNDARIES.DEATH_Y) {
             this.health = 0;
         }
 
@@ -358,13 +404,12 @@ class Player {
         // Cool downs
         this.attackCooldown -= deltaTime;
         this.parryCooldown -= deltaTime;
+        this.attackDuration -= deltaTime;
+        this.damageFlashTimer -= deltaTime;
 
-        // Attack duration
-        if (this.isAttacking) {
-            this.attackCooldown = Math.max(this.attackCooldown, -0.1);
-            if (this.attackCooldown < -0.1) {
-                this.isAttacking = false;
-            }
+        // Attack duration - end attack when duration expires
+        if (this.isAttacking && this.attackDuration <= 0) {
+            this.isAttacking = false;
         }
     }
 
@@ -377,29 +422,37 @@ class Player {
         const overlapBottom = (platform.y + platform.height) - this.y;
 
         const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+        const epsilon = 0.5; // Small buffer to prevent sticking
 
         if (minOverlap === overlapTop && this.velocityY > 0) {
-            this.y = platform.y - this.height;
+            this.y = platform.y - this.height - epsilon;
             this.velocityY = 0;
             this.isGrounded = true;
         } else if (minOverlap === overlapBottom && this.velocityY < 0) {
-            this.y = platform.y + platform.height;
+            this.y = platform.y + platform.height + epsilon;
             this.velocityY = 0;
         } else if (minOverlap === overlapLeft && this.velocityX > 0) {
-            this.x = platform.x - this.width;
+            this.x = platform.x - this.width - epsilon;
         } else if (minOverlap === overlapRight && this.velocityX < 0) {
-            this.x = platform.x + platform.width;
+            this.x = platform.x + platform.width + epsilon;
         }
     }
 
     takeDamage(amount) {
         this.health -= amount;
+        this.damageFlashTimer = 0.15; // 150ms flash effect
     }
 
     draw(ctx) {
         // Draw body
         ctx.fillStyle = '#2E7D32';
         ctx.fillRect(this.x, this.y, this.width, this.height);
+
+        // Draw damage flash overlay
+        if (this.damageFlashTimer > 0) {
+            ctx.fillStyle = `rgba(255, 0, 0, ${0.4 * (this.damageFlashTimer / 0.15)})`;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
 
         // Draw head
         ctx.fillStyle = '#C19A6B';
@@ -423,7 +476,8 @@ class Player {
         if (this.isParrying) {
             ctx.strokeStyle = '#4CAF50';
             ctx.lineWidth = 3;
-            ctx.arc(this.x + this.width / 2, this.y + this.height / 2, 35, 0, Math.PI * 2);
+            ctx.beginPath();
+            ctx.arc(this.x + this.width / 2, this.y + this.height / 2, CONFIG.PLAYER.PARRY_RADIUS, 0, Math.PI * 2);
             ctx.stroke();
         }
 
@@ -444,29 +498,29 @@ class Enemy {
         this.x = x;
         this.y = y;
         this.game = game;
-        this.width = 28;
-        this.height = 36;
+        this.width = CONFIG.ENEMY.WIDTH;
+        this.height = CONFIG.ENEMY.HEIGHT;
         this.hitbox = new Hitbox(x, y, this.width, this.height);
 
         // Physics
         this.velocityX = 0;
         this.velocityY = 0;
-        this.speed = 100;
-        this.jumpPower = 300;
+        this.speed = CONFIG.ENEMY.SPEED;
+        this.jumpPower = CONFIG.ENEMY.JUMP_POWER;
 
         // State
-        this.health = 30;
-        this.maxHealth = 30;
+        this.health = CONFIG.ENEMY.MAX_HEALTH;
+        this.maxHealth = CONFIG.ENEMY.MAX_HEALTH;
         this.isGrounded = false;
         this.isAttacking = false;
         this.direction = 1;
 
         // AI
-        this.patrolRange = 300;
+        this.patrolRange = CONFIG.ENEMY.PATROL_RANGE;
         this.patrolLeft = x - this.patrolRange / 2;
         this.patrolRight = x + this.patrolRange / 2;
         this.attackCooldown = 0;
-        this.chaseDistance = 400;
+        this.chaseDistance = CONFIG.ENEMY.CHASE_DISTANCE;
         this.stateTimer = 0;
 
         // Attack hitbox
@@ -490,10 +544,10 @@ class Enemy {
             }
 
             // Attack when close
-            if (distToPlayer < 60 && this.attackCooldown <= 0) {
+            if (distToPlayer < CONFIG.ENEMY.ATTACK_DISTANCE && this.attackCooldown <= 0) {
                 this.isAttacking = true;
-                this.attackCooldown = 0.8;
-                const attackRange = 40;
+                this.attackCooldown = CONFIG.ENEMY.ATTACK_COOLDOWN;
+                const attackRange = CONFIG.ENEMY.ATTACK_RANGE;
                 this.attackHitbox = new Hitbox(
                     this.x + (this.direction > 0 ? this.width : -attackRange),
                     this.y,
@@ -523,10 +577,10 @@ class Enemy {
 
         // Boundary check
         if (this.x < 0) this.x = 0;
-        if (this.x + this.width > 1200) this.x = 1200 - this.width;
+        if (this.x + this.width > canvas.width) this.x = canvas.width - this.width;
 
         // Death boundary
-        if (this.y > 700) {
+        if (this.y > CONFIG.BOUNDARIES.DEATH_Y) {
             this.health = 0;
         }
 
@@ -535,7 +589,7 @@ class Enemy {
 
         // Attack duration
         if (this.isAttacking) {
-            if (this.attackCooldown < 0.5) {
+            if (this.attackCooldown < CONFIG.ENEMY.ATTACK_COOLDOWN * 0.6) {
                 this.isAttacking = false;
             }
         }
@@ -550,18 +604,19 @@ class Enemy {
         const overlapBottom = (platform.y + platform.height) - this.y;
 
         const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+        const epsilon = 0.5; // Small buffer to prevent sticking
 
         if (minOverlap === overlapTop && this.velocityY > 0) {
-            this.y = platform.y - this.height;
+            this.y = platform.y - this.height - epsilon;
             this.velocityY = 0;
             this.isGrounded = true;
         } else if (minOverlap === overlapBottom && this.velocityY < 0) {
-            this.y = platform.y + platform.height;
+            this.y = platform.y + platform.height + epsilon;
             this.velocityY = 0;
         } else if (minOverlap === overlapLeft && this.velocityX > 0) {
-            this.x = platform.x - this.width;
+            this.x = platform.x - this.width - epsilon;
         } else if (minOverlap === overlapRight && this.velocityX < 0) {
-            this.x = platform.x + platform.width;
+            this.x = platform.x + platform.width + epsilon;
         }
     }
 
